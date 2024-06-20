@@ -90,15 +90,6 @@ function StorageScreen() {
             <SizeButton>글마당에서 불러오기</SizeButton>
             <SizeButton commit={true} onClick={() => { console.log(documents); }}>시작하기</SizeButton>
           </ButtonBox>
-        {/* <ul>
-          {documents.map((doc, index) => (
-            <li key={index}>
-              <h2>{doc.title}</h2>
-              <p><strong>Topic:</strong> {doc.topic}</p>
-              <p><strong>Lines:</strong> {doc.line}</p>
-            </li>
-          ))}
-        </ul> */}
         </StorageBox>
       </Section>
     </>
