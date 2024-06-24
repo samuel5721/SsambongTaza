@@ -3,7 +3,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './routes/Home';
 import Login from './routes/Login';
 import SignUp from './routes/SignUp';
-import StorageScreen from './routes/StorageScreen';
+import StorageScreen from './routes/TypingStorage';
+import TypingScreen from './routes/Typing';
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
         <Route path='/login' element={<Login />} />
         <Route path='/signUp' element={<SignUp />} />
         <Route path='/storage' element={<StorageScreen />} />
+        <Route path='/typing/:id' element={<TypingScreen />} />
         <Route path='*' element={<div>Not Found</div>} />
       </Routes>
     </Router>

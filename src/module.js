@@ -1,3 +1,5 @@
+import styled from 'styled-components';
+
 const category = {
   PE: '시&수필',
   NO: '소설',
@@ -13,4 +15,13 @@ const category = {
   DO: '기록물'
 };
 
-export default category;
+const Section = styled.section`
+  margin-top: 7rem;
+  padding: 0 10rem;
+  display: flex;
+  flex-direction: column;
+  align-items: left;
+  min-height: ${props => props.scrollbar ? '100vh' : 'none'};
+`;
+
+export {category, Section};
