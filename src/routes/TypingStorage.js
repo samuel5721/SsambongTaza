@@ -11,55 +11,75 @@ function StorageScreen() {
   const navigate = useNavigate();
   const [documents, setDocuments] = useState([]);
   const [checkedIndex, setCheckedIndex] = useState(-1);
+  const [randomDoc, setRandomDoc] = useState(null);
+
+  const fetchRandomDocument = async () => {
+    const collectionRef = collection(db, 'articles');
+    const snapshot = await getDocs(collectionRef);
+    const docs = snapshot.docs;
+    if (docs.length > 0) {
+      const randomIndex = Math.floor(Math.random() * docs.length);
+      const randomDoc = docs[randomIndex];
+      return randomDoc.id
+    }
+    return null;
+  };
+
+  const fetchAdminData = async () => {
+    try {
+      // 'user_storage' 컬렉션의 'admin' 문서 참조
+      const adminDocRef = doc(db, 'user_storage', 'admin');
+      const adminDocSnap = await getDoc(adminDocRef);
+
+      if (adminDocSnap.exists()) {
+        const adminData = adminDocSnap.data();
+        const refPaths = adminData.ref.map(refItem => refItem.path);
+        
+        const documentPromises = refPaths.map(async (path) => {
+          const refDocSnap = await getDoc(doc(db, path));
+          if (refDocSnap.exists()) {
+            const refData = refDocSnap.data();
+            return {
+              title: refData.title,
+              topic: refData.topic,
+              line: refData.line,
+              id: refDocSnap.id,
+            };
+          } else {
+            return {
+              title: 'No title found',
+              topic: 'NE',
+              line: 0,
+              id: -1,
+            };
+          }
+        });
+
+        const documentsArray = await Promise.all(documentPromises);
+        setDocuments(documentsArray);
+      } else {
+        console.log('No such document!');
+      }
+    } catch (error) {
+      console.log('Error fetching admin data: ', error);
+    }
+  };        
+
 
   useEffect(() => {
-    const fetchAdminData = async () => {
-      try {
-        // 'user_storage' 컬렉션의 'admin' 문서 참조
-        const adminDocRef = doc(db, 'user_storage', 'admin');
-        const adminDocSnap = await getDoc(adminDocRef);
-
-        if (adminDocSnap.exists()) {
-          const adminData = adminDocSnap.data();
-          const refPaths = adminData.ref.map(refItem => refItem.path);
-          
-          const documentPromises = refPaths.map(async (path) => {
-            const refDocSnap = await getDoc(doc(db, path));
-            if (refDocSnap.exists()) {
-              const refData = refDocSnap.data();
-              return {
-                title: refData.title,
-                topic: refData.topic,
-                line: refData.line,
-                id: refDocSnap.id,
-              };
-            } else {
-              return {
-                title: 'No title found',
-                topic: 'NE',
-                line: 0,
-                id: -1,
-              };
-            }
-          });
-
-          const documentsArray = await Promise.all(documentPromises);
-          console.log(documentsArray);
-          setDocuments(documentsArray);
-        } else {
-          console.log('No such document!');
-        }
-      } catch (error) {
-        console.log('Error fetching admin data: ', error);
-      }
+    const fetchAndSetDocument = async () => {
+      const docId = await fetchRandomDocument();
+      setRandomDoc(docId);
     };
-
+  
+    fetchAndSetDocument();
     fetchAdminData();
   }, []);
+  
 
-  function handleStart() {
+  const handleStart = () => {
     if (checkedIndex === -1) {
-      navigate('/typing/0000');
+      navigate(`/typing/${randomDoc}`);
     } else {
       if(documents[checkedIndex].id === -1) {
         alert('선택한 글이 없습니다. 문제가 지속된다면 관리자에게 문의하세요.');
@@ -67,7 +87,7 @@ function StorageScreen() {
       }
       navigate('/typing/' + documents[checkedIndex].id);
     }
-  }
+  };
 
   return (
     <>

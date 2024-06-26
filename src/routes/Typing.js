@@ -17,6 +17,7 @@ function TypingScreen() {
   const [currentLineGroup, setcurrentLineGroup] = useState(0);
   const [currentLine, setcurrentLine] = useState(0);
   const [line, setLine] = useState(0);
+  const [correctChars, setCorrectChars] = useState(0);
   const [accuracy, setAccuracy] = useState(0);
 
   const canvasRef = useRef(null);
@@ -102,7 +103,7 @@ function TypingScreen() {
       console.log('Article data:', docSnap.data());
       setArticle(docSnap.data());
 
-      const font = '21px D2Coding, monospace'; // 라벨의 폰트와 동일하게 설정하세요
+      const font = '21px D2Coding, monospace';
       setPassages(splitString(docSnap.data().body, labelWidth, font));
 
     } catch (error) {
@@ -116,57 +117,49 @@ function TypingScreen() {
     }
   }, [labelWidth]);
 
-  useEffect(() => {
-    if (inputRefs.current[0]) {
-      inputRefs.current[0].focus();
-    }
-  }, [currentLineGroup, passages]);
-
   const handleNext = () => {
     setcurrentLineGroup(prevLine => prevLine + 4);
     setTimeout(() => {
       inputRefs.current.forEach(input => {
         if (input) {
-          input.value = ''; // 모든 input의 내용을 비움
+          input.value = '';
         }
       });
       document.querySelectorAll('span').forEach(span => {
-        span.style.color = 'black'; // 모든 라벨의 색깔을 검정색으로 변경
+        span.style.color = 'black';
       });
       if (inputRefs.current[0]) {
         inputRefs.current[0].focus();
       }
     }, 0);
-    
   };
 
   const handleInputChange = (e, index) => {
     const value = e.target.value;
     const passage = passages[currentLineGroup + index];
-    let correctChars = 0;
   
     const spanElements = document.querySelectorAll(`#char-${currentLineGroup + index} span`);
     spanElements.forEach((span, spanIndex) => {
       if (spanIndex < value.length) {
         span.style.color = value[spanIndex] === span.textContent ? 'blue' : 'red';
-        if (value[spanIndex] === span.textContent) correctChars++;
       } else {
         span.style.color = 'black';
       }
     });
   
-    setAccuracy(((correctChars / value.length) * 100).toFixed(2));
-  
-    if (value.length > passages[currentLineGroup + index].length || ((e.key === ' ' || e.key === 'Enter') && value.length === passages[currentLineGroup + index].length)) {
-      const nextInput = inputRefs.current[index + 1];
-      setcurrentLine(prevLine => prevLine + 1);
-      if(currentLine === line) {
-        navigate('/'); //result로 이동
-      }
-      if (nextInput) {
-        nextInput.focus();
-      } else {
-        handleNext();
+    if (value.length >= passages[currentLineGroup + index].length) {
+      if (e.key === ' ' || e.key === 'Enter' || value.length > passages[currentLineGroup + index].length) {
+        const nextInput = inputRefs.current[index + 1];
+        setcurrentLine(prevLine => prevLine + 1);
+        if (currentLine + 1 >= line) {
+          navigate('/');
+          return;
+        }
+        if (nextInput) {
+          nextInput.focus();
+        } else {
+          handleNext();
+        }
       }
     }
   };
@@ -188,7 +181,7 @@ function TypingScreen() {
       document.body.removeEventListener('click', handleBodyClick);
     };
   }, []);
-
+  
   return (
     <>
       <Header />
@@ -196,10 +189,23 @@ function TypingScreen() {
         <HeadBar>
           <ProgressBox>
             <ProgressText>{currentLine}/{line}</ProgressText>
-            <ProgressBar>
-              <ProgressBarFill widthProportion={(currentLine / line) * 100} />
-            </ProgressBar>
+            <ProgressBar><ProgressBarFill widthProportion={(currentLine / line) * 100} /></ProgressBar>
           </ProgressBox>
+          <hr />
+          <StatBox>
+            <Stat>
+              <StatText>현재타자</StatText>
+              <StatValue>{100}</StatValue>
+            </Stat>
+            <Stat>
+              <StatText>평균타자</StatText>
+              <StatValue>{100}</StatValue>
+            </Stat>
+            <Stat>
+              <StatText>정확도</StatText>
+              <StatValue>{Math.round(accuracy)}%</StatValue>
+            </Stat>
+          </StatBox>
         </HeadBar>
         <TypingBox>
           {labelWidth === 0 && (
@@ -207,39 +213,36 @@ function TypingScreen() {
               <TypingLabel ref={labelRef}>Calculating width...</TypingLabel>
             </TypingContainer>
           )}
-          {/* Actual TypingLabels and Inputs */}
-          {labelWidth > 0 && passages.slice(currentLineGroup, currentLineGroup + 4).map((passage, passageIndex) => {
-            return (
-              <TypingContainer key={passageIndex}>
-                <TypingLabel id={`char-${currentLineGroup + passageIndex}`}>
-                  {passage.split('').map((char, charIndex) => (
-                    <CharacterSpan key={charIndex} isMatch={null}>
-                      {char}
-                    </CharacterSpan>
-                  ))}
-                </TypingLabel>
-                <TypingInput
-                  ref={el => inputRefs.current[passageIndex] = el}
-                  onKeyUp={(e) => handleInputChange(e, passageIndex)}
-                  onMouseDown={preventDefault} // 클릭을 통한 포커싱 해제 방지
-                  onSelect={preventDefault} // 글자 선택 방지
-                  onCopy={preventDefault} // 복사 방지
-                  onPaste={preventDefault} // 붙여넣기 방지
-                />
-              </TypingContainer>
-            );
-          })}
-          <NextPassage>&gt;&gt; {passages[currentLineGroup+4]}</NextPassage>
+          {labelWidth > 0 && passages.slice(currentLineGroup, currentLineGroup + 4).map((passage, passageIndex) => (
+            <TypingContainer key={passageIndex}>
+              <TypingLabel id={`char-${currentLineGroup + passageIndex}`}>
+                {passage.split('').map((char, charIndex) => (
+                  <CharacterSpan key={charIndex} isMatch={null}>
+                    {char}
+                  </CharacterSpan>
+                ))}
+              </TypingLabel>
+              <TypingInput
+                ref={el => inputRefs.current[passageIndex] = el}
+                onChange={(e) => handleInputChange(e, passageIndex)} // onKeyUp을 onChange로 변경
+                onMouseDown={preventDefault} // 클릭을 통한 포커싱 해제 방지
+                onSelect={preventDefault} // 글자 선택 방지
+                onCopy={preventDefault} // 복사 방지
+                onPaste={preventDefault} // 붙여넣기 방지
+              />
+            </TypingContainer>
+          ))}
+          <NextPassage>&gt;&gt; {passages[currentLineGroup + 4]}</NextPassage>
         </TypingBox>
       </Section>
     </>
   );
-}
+}  
 
 const HeadBar = styled.div`
   width: 100%;
   height: 9rem;
-  border: 1px solid black;
+  // border: 1px solid black;
   margin-bottom: 2rem;
 `;
 
@@ -260,6 +263,7 @@ const ProgressBox = styled.div`
 const ProgressText = styled.div`
   width: 10rem;
   text-align: center;
+  margin-bottom: 0.5rem;
 
   font-size: 40px;
   font-family: 'Namum Gothic', sans-serif;
@@ -277,6 +281,29 @@ const ProgressBarFill = styled.div`
   height: 1rem;
   background-color: #3347f7;
   border-radius: 10px;
+`;
+
+const StatBox = styled.div`
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: row;
+  gap: 2.5rem;
+`;
+
+const Stat = styled.div`
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+`;
+
+const StatText = styled.div`
+  padding-bottom: 0.5rem;
+  font-size: 20px;
+`;
+
+const StatValue = styled.div`
+  width: 6rem;
+  font-size: 50px;
 `;
 
 const TypingContainer = styled.div`
