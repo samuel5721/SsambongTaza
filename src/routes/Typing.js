@@ -14,9 +14,10 @@ function TypingScreen() {
 
   const [article, setArticle] = useState({});
   const [passages, setPassages] = useState([]);
-  const [currentLineGroup, setcurrentLineGroup] = useState(0);
-  const [currentLine, setcurrentLine] = useState(0);
+  const [CurrentLineGroup, setCurrentLineGroup] = useState(0);
+  const [CurrentLine, setCurrentLine] = useState(0);
   const [line, setLine] = useState(0);
+  const [currentChars, setCurrentChars] = useState(0);
   const [correctChars, setCorrectChars] = useState(0);
   const [accuracy, setAccuracy] = useState(0);
 
@@ -26,6 +27,11 @@ function TypingScreen() {
 
   useEffect(() => {
     canvasRef.current = document.createElement('canvas');
+    document.body.addEventListener('click', handleBodyClick);
+
+    return () => {
+      document.body.removeEventListener('click', handleBodyClick);
+    };
   }, []);
 
   useEffect(() => {
@@ -69,7 +75,6 @@ function TypingScreen() {
         currentString = '';
       }
   
-      // Add an empty string to denote the newline
       result.push('');
     });
   
@@ -118,7 +123,7 @@ function TypingScreen() {
   }, [labelWidth]);
 
   const handleNext = () => {
-    setcurrentLineGroup(prevLine => prevLine + 4);
+    setCurrentLineGroup(prevLine => prevLine + 4);
     setTimeout(() => {
       inputRefs.current.forEach(input => {
         if (input) {
@@ -136,9 +141,8 @@ function TypingScreen() {
 
   const handleInputChange = (e, index) => {
     const value = e.target.value;
-    const passage = passages[currentLineGroup + index];
   
-    const spanElements = document.querySelectorAll(`#char-${currentLineGroup + index} span`);
+    const spanElements = document.querySelectorAll(`#char-${CurrentLineGroup + index} span`);
     spanElements.forEach((span, spanIndex) => {
       if (spanIndex < value.length) {
         span.style.color = value[spanIndex] === span.textContent ? 'blue' : 'red';
@@ -146,12 +150,22 @@ function TypingScreen() {
         span.style.color = 'black';
       }
     });
-  
-    if (value.length >= passages[currentLineGroup + index].length) {
-      if (e.key === ' ' || e.key === 'Enter' || value.length > passages[currentLineGroup + index].length) {
+
+    const nowCurrentChars = currentChars + value.length;
+    const nowCorrectChars = correctChars + Array.from(value).filter((char, charIndex) => char === passages[CurrentLineGroup + index][charIndex]).length;
+    setAccuracy((nowCorrectChars / nowCurrentChars) * 100);
+
+    console.log('CurrentChars:', nowCurrentChars);
+    console.log('CorrectChars:', nowCorrectChars);
+    console.log('Accuracy:', accuracy);
+
+    if (value.length >= passages[CurrentLineGroup + index].length) {
+      if (e.key === ' ' || e.key === 'Enter' || value.length > passages[CurrentLineGroup + index].length) {
+        setCurrentChars(currentChars + value.length);
+        setCorrectChars(correctChars + Array.from(value).filter((char, charIndex) => char === passages[CurrentLineGroup + index][charIndex]).length);
         const nextInput = inputRefs.current[index + 1];
-        setcurrentLine(prevLine => prevLine + 1);
-        if (currentLine + 1 >= line) {
+        setCurrentLine(prevLine => prevLine + 1);
+        if (CurrentLine + 1 >= line) {
           navigate('/');
           return;
         }
@@ -173,14 +187,6 @@ function TypingScreen() {
   const preventDefault = (e) => {
     e.preventDefault();
   };
-
-  useEffect(() => {
-    document.body.addEventListener('click', handleBodyClick);
-
-    return () => {
-      document.body.removeEventListener('click', handleBodyClick);
-    };
-  }, []);
   
   return (
     <>
@@ -188,8 +194,8 @@ function TypingScreen() {
       <Section scrollbar={false}>
         <HeadBar>
           <ProgressBox>
-            <ProgressText>{currentLine}/{line}</ProgressText>
-            <ProgressBar><ProgressBarFill widthProportion={(currentLine / line) * 100} /></ProgressBar>
+            <ProgressText>{CurrentLine}/{line}</ProgressText>
+            <ProgressBar><ProgressBarFill widthProportion={(CurrentLine / line) * 100} /></ProgressBar>
           </ProgressBox>
           <hr />
           <StatBox>
@@ -213,9 +219,9 @@ function TypingScreen() {
               <TypingLabel ref={labelRef}>Calculating width...</TypingLabel>
             </TypingContainer>
           )}
-          {labelWidth > 0 && passages.slice(currentLineGroup, currentLineGroup + 4).map((passage, passageIndex) => (
+          {labelWidth > 0 && passages.slice(CurrentLineGroup, CurrentLineGroup + 4).map((passage, passageIndex) => (
             <TypingContainer key={passageIndex}>
-              <TypingLabel id={`char-${currentLineGroup + passageIndex}`}>
+              <TypingLabel id={`char-${CurrentLineGroup + passageIndex}`}>
                 {passage.split('').map((char, charIndex) => (
                   <CharacterSpan key={charIndex} isMatch={null}>
                     {char}
@@ -224,6 +230,7 @@ function TypingScreen() {
               </TypingLabel>
               <TypingInput
                 ref={el => inputRefs.current[passageIndex] = el}
+                autoFocus={passageIndex === 0}
                 onChange={(e) => handleInputChange(e, passageIndex)} // onKeyUp을 onChange로 변경
                 onMouseDown={preventDefault} // 클릭을 통한 포커싱 해제 방지
                 onSelect={preventDefault} // 글자 선택 방지
@@ -232,7 +239,7 @@ function TypingScreen() {
               />
             </TypingContainer>
           ))}
-          <NextPassage>&gt;&gt; {passages[currentLineGroup + 4]}</NextPassage>
+          <NextPassage>&gt;&gt; {passages[CurrentLineGroup + 4]}</NextPassage>
         </TypingBox>
       </Section>
     </>

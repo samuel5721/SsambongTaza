@@ -12,7 +12,9 @@ const category = {
   TS: '기술/과학',
   AR: '예술',
   HI: '역사',
-  DO: '기록물'
+  DO: '기록물',
+  NOT: '미분류',
+  NOF: '찾을 수 없음',
 };
 
 const Section = styled.section`
