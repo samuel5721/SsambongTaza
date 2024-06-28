@@ -42,14 +42,14 @@ function StorageScreen() {
             return {
               title: refData.title,
               topic: refData.topic,
-              line: refData.line,
+              words: refData.words,
               id: refDocSnap.id,
             };
           } else {
             return {
               title: 'No title found',
-              topic: 'NE',
-              line: 0,
+              topic: 'NOF',
+              words: 0,
               id: -1,
             };
           }
@@ -99,17 +99,21 @@ function StorageScreen() {
             <Article isChecked={checkedIndex === -1} onClick={() => { setCheckedIndex(-1); }}>
               <Title>무작위 긴 글</Title>
               <DetailBox>
-                <Detail>300줄</Detail>
+                <Detail>무작위</Detail>
               </DetailBox>
             </Article>
             <br />
+            {
+              (documents.length === 0) && 
+              <p>불러오는 중...</p>
+            }
             {
               documents.map((doc, index) => (
                 <Article key={index} isChecked={checkedIndex === index} onClick={() => { setCheckedIndex(index); }}>
                   <Title>{doc.title}</Title>
                   <DetailBox>
                     <Detail>{category[doc.topic]}</Detail>
-                    <Detail>{doc.line}줄</Detail>
+                    <Detail>{doc.words}자</Detail>
                   </DetailBox>
                 </Article>
               ))
@@ -125,8 +129,6 @@ function StorageScreen() {
     </>
   );
 }
-
-
 
 const FrontText = styled.div`
   font-size: 20px;
