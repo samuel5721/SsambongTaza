@@ -21,13 +21,14 @@
   src: url('//fastly.jsdelivr.net/font-nanumlight/1.0/NanumBarunGothicWebLight.eot');
   src: url('//fastly.jsdelivr.net/font-nanumlight/1.0/NanumBarunGothicWebLight.eot?#iefix') format('embedded-opentype'), url('//fastly.jsdelivr.net/font-nanumlight/1.0/NanumBarunGothicWebLight.woff') format('woff'), url('//fastly.jsdelivr.net/font-nanumlight/1.0/NanumBarunGothicWebLight.ttf') format('truetype');
  }
-
  @font-face {
   font-family: 'D2Coding';
   src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_three@1.0/D2Coding.woff') format('woff');
   font-weight: normal;
   font-style: normal;
 }
+
+@import url('//fonts.googleapis.com/earlyaccess/nanumgothiccoding.css');
 
 * {
   margin: 0;

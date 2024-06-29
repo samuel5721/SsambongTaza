@@ -6,6 +6,26 @@ import { useNavigate, useParams } from "react-router-dom";
 import Header from '../components/Header';
 import { Section } from "../module";
 
+function useInterval(callback, delay) {
+  const savedCallback = useRef();
+
+  // Remember the latest callback.
+  useEffect(() => {
+    savedCallback.current = callback;
+  }, [callback]);
+
+  // Set up the interval.
+  useEffect(() => {
+    function tick() {
+      savedCallback.current();
+    }
+    if (delay !== null) {
+      let id = setInterval(tick, delay);
+      return () => clearInterval(id);
+    }
+  }, [delay]);
+}
+
 function TypingScreen() {
   const inputRefs = useRef([]);
   const param = useParams();
@@ -14,31 +34,26 @@ function TypingScreen() {
 
   const [article, setArticle] = useState({});
   const [passages, setPassages] = useState([]);
-  const [CurrentLineGroup, setCurrentLineGroup] = useState(0);
-  const [CurrentLine, setCurrentLine] = useState(0);
+  const [currentLineGroup, setCurrentLineGroup] = useState(0);
+  const [currentLine, setCurrentLine] = useState(0);
   const [line, setLine] = useState(0);
+
+  const [preChars, setPreChars] = useState(0);
+  const [preCorrectChars, setPreCorrectChars] = useState(0);
   const [currentChars, setCurrentChars] = useState(0);
   const [correctChars, setCorrectChars] = useState(0);
   const [accuracy, setAccuracy] = useState(0);
+  const [time, setTime] = useState({startTime: Date.now(), endTime: 0});
+  const [backTime, setBackTime] = useState(Date.now());
+  const [averageCPM, setAverageCPM] = useState(0);
+  const currentCPMs = [];
+  const [currentCPM, setCurrentCPM] = useState(0);
 
   const canvasRef = useRef(null);
   const labelRef = useRef(null);
   const [labelWidth, setLabelWidth] = useState(0);
 
-  useEffect(() => {
-    canvasRef.current = document.createElement('canvas');
-    document.body.addEventListener('click', handleBodyClick);
-
-    return () => {
-      document.body.removeEventListener('click', handleBodyClick);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (labelRef.current) {
-      setLabelWidth(labelRef.current.offsetWidth);
-    }
-  }, [labelRef.current]);
+  
 
   const getTextWidth = (text, font) => {
     const context = canvasRef.current.getContext('2d');
@@ -105,7 +120,6 @@ function TypingScreen() {
         return;
       }
 
-      console.log('Article data:', docSnap.data());
       setArticle(docSnap.data());
 
       const font = '21px D2Coding, monospace';
@@ -115,12 +129,6 @@ function TypingScreen() {
       console.error("Error getting article: ", error);
     }
   };
-
-  useEffect(() => {
-    if (labelWidth > 0) {
-      findArticle();
-    }
-  }, [labelWidth]);
 
   const handleNext = () => {
     setCurrentLineGroup(prevLine => prevLine + 4);
@@ -142,7 +150,7 @@ function TypingScreen() {
   const handleInputChange = (e, index) => {
     const value = e.target.value;
   
-    const spanElements = document.querySelectorAll(`#char-${CurrentLineGroup + index} span`);
+    const spanElements = document.querySelectorAll(`#char-${currentLineGroup + index} span`);
     spanElements.forEach((span, spanIndex) => {
       if (spanIndex < value.length) {
         span.style.color = value[spanIndex] === span.textContent ? 'blue' : 'red';
@@ -151,24 +159,36 @@ function TypingScreen() {
       }
     });
 
-    const nowCurrentChars = currentChars + value.length;
-    const nowCorrectChars = correctChars + Array.from(value).filter((char, charIndex) => char === passages[CurrentLineGroup + index][charIndex]).length;
-    setAccuracy((nowCorrectChars / nowCurrentChars) * 100);
+    // 정확도 계산
+    const newCurrentChars = preChars + value.length;
+    const newCorrectChars = preCorrectChars + Array.from(value).filter((char, charIndex) => char === passages[currentLineGroup + index][charIndex]).length;
+    
+    setCurrentChars(newCurrentChars);
+    setCorrectChars(newCorrectChars);
+  
+    const accuracy = (newCorrectChars / newCurrentChars) * 100;
+    setAccuracy(accuracy);
 
-    console.log('CurrentChars:', nowCurrentChars);
-    console.log('CorrectChars:', nowCorrectChars);
-    console.log('Accuracy:', accuracy);
+    // 타자수 계산
+    getCurrentCPM();
 
-    if (value.length >= passages[CurrentLineGroup + index].length) {
-      if (e.key === ' ' || e.key === 'Enter' || value.length > passages[CurrentLineGroup + index].length) {
-        setCurrentChars(currentChars + value.length);
-        setCorrectChars(correctChars + Array.from(value).filter((char, charIndex) => char === passages[CurrentLineGroup + index][charIndex]).length);
+  
+    if (value.length >= passages[currentLineGroup + index].length) {
+      if (e.key === ' ' || e.key === 'Enter' || value.length > passages[currentLineGroup + index].length) {
+        const newPreChars = preChars + value.length;
+        const newPreCorrectChars = preCorrectChars + Array.from(value).filter((char, charIndex) => char === passages[currentLineGroup + index][charIndex]).length;
+  
+        setPreChars(newPreChars);
+        setPreCorrectChars(newPreCorrectChars);
+  
         const nextInput = inputRefs.current[index + 1];
         setCurrentLine(prevLine => prevLine + 1);
-        if (CurrentLine + 1 >= line) {
+  
+        if (currentLine + 1 >= line) {
           navigate('/');
           return;
         }
+  
         if (nextInput) {
           nextInput.focus();
         } else {
@@ -177,6 +197,7 @@ function TypingScreen() {
       }
     }
   };
+  
 
   const handleBodyClick = () => {
     if (inputRefs.current[0]) {
@@ -187,6 +208,75 @@ function TypingScreen() {
   const preventDefault = (e) => {
     e.preventDefault();
   };
+
+  const getTimeDuration = () => {
+    if (time.endTime && time.startTime) {
+        const duration = Math.floor((time.endTime - time.startTime) / 1000);
+        return duration > 0 ? duration : 0;
+    }
+    return 0;
+};
+  
+  const formatTwoDigitNumber = (number) => number < 10 ? '0' + number : number.toString();
+  
+  const getTimeClock = () => `${formatTwoDigitNumber(Math.floor(getTimeDuration() / 60))}:${formatTwoDigitNumber(getTimeDuration() % 60)}`;
+  
+  const getAverageCPM = () => {
+    const duration = getTimeDuration() / 60;
+    if (duration > 0) {
+      setAverageCPM(currentChars*2.5 / duration);
+    } else {
+      setAverageCPM(0);
+    }
+    return;
+  };
+  
+  const getCurrentCPM = () => {
+    const littleDuration = (Date.now() - backTime) / 1000;
+    const littleCpm = (60 / littleDuration) * 2;
+
+    if(littleCpm > 10000) return;
+
+    currentCPMs.push(littleCpm);
+    if(currentCPMs.length > 20) {
+      currentCPMs.shift();
+    }
+
+    setCurrentCPM(currentCPMs.reduce((acc, cur) => acc + cur, 0) / currentCPMs.length);
+    setBackTime(Date.now());
+    return;
+  };
+  
+  useEffect(() => {
+    canvasRef.current = document.createElement('canvas');
+    document.body.addEventListener('click', handleBodyClick);
+    setTime({ startTime: Date.now(), endTime: 0 });
+
+    return () => {
+      document.body.removeEventListener('click', handleBodyClick);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (labelWidth > 0) {
+      findArticle();
+    }
+  }, [labelWidth]);
+
+  useEffect(() => {
+    if (labelRef.current) {
+      setLabelWidth(labelRef.current.offsetWidth);
+    }
+  }, [labelRef.current]);
+
+  useInterval(() => {
+    setTime(prevTime => ({ startTime: prevTime.startTime, endTime: Date.now() }));
+  }, 100);
+
+  useInterval(() => {
+    getAverageCPM();
+  }, 500);
+  
   
   return (
     <>
@@ -194,24 +284,29 @@ function TypingScreen() {
       <Section scrollbar={false}>
         <HeadBar>
           <ProgressBox>
-            <ProgressText>{CurrentLine}/{line}</ProgressText>
-            <ProgressBar><ProgressBarFill widthProportion={(CurrentLine / line) * 100} /></ProgressBar>
+            <ProgressText>{currentLine+1}/{line}</ProgressText>
+            <ProgressBar><ProgressBarFill widthProportion={(currentLine / line) * 100} /></ProgressBar>
           </ProgressBox>
           <hr />
-          <StatBox>
-            <Stat>
-              <StatText>현재타자</StatText>
-              <StatValue>{100}</StatValue>
-            </Stat>
-            <Stat>
-              <StatText>평균타자</StatText>
-              <StatValue>{100}</StatValue>
-            </Stat>
-            <Stat>
-              <StatText>정확도</StatText>
-              <StatValue>{Math.round(accuracy)}%</StatValue>
-            </Stat>
-          </StatBox>
+          <ValuesBox>
+            <StatBox>
+              <Stat>
+                <StatText>현재타자</StatText>
+                <StatValue>{Math.floor(currentCPM)}</StatValue>
+              </Stat>
+              <Stat>
+                <StatText>평균타자</StatText>
+                <StatValue>{Math.floor(averageCPM)}</StatValue>
+              </Stat>
+              <Stat>
+                <StatText>정확도</StatText>
+                <StatValue>{Math.round(accuracy)}%</StatValue>
+              </Stat>
+            </StatBox>
+            <TimeBox>
+              <TimeText>{getTimeClock()}</TimeText>
+            </TimeBox>
+          </ValuesBox>
         </HeadBar>
         <TypingBox>
           {labelWidth === 0 && (
@@ -219,9 +314,9 @@ function TypingScreen() {
               <TypingLabel ref={labelRef}>Calculating width...</TypingLabel>
             </TypingContainer>
           )}
-          {labelWidth > 0 && passages.slice(CurrentLineGroup, CurrentLineGroup + 4).map((passage, passageIndex) => (
+          {labelWidth > 0 && passages.slice(currentLineGroup, currentLineGroup + 4).map((passage, passageIndex) => (
             <TypingContainer key={passageIndex}>
-              <TypingLabel id={`char-${CurrentLineGroup + passageIndex}`}>
+              <TypingLabel id={`char-${currentLineGroup + passageIndex}`}>
                 {passage.split('').map((char, charIndex) => (
                   <CharacterSpan key={charIndex} isMatch={null}>
                     {char}
@@ -239,7 +334,7 @@ function TypingScreen() {
               />
             </TypingContainer>
           ))}
-          <NextPassage>&gt;&gt; {passages[CurrentLineGroup + 4]}</NextPassage>
+          <NextPassage>&gt;&gt; {passages[currentLineGroup + 4]}</NextPassage>
         </TypingBox>
       </Section>
     </>
@@ -249,7 +344,6 @@ function TypingScreen() {
 const HeadBar = styled.div`
   width: 100%;
   height: 9rem;
-  // border: 1px solid black;
   margin-bottom: 2rem;
 `;
 
@@ -290,8 +384,14 @@ const ProgressBarFill = styled.div`
   border-radius: 10px;
 `;
 
-const StatBox = styled.div`
+const ValuesBox = styled.div`
   margin-top: 1rem;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+`;
+
+const StatBox = styled.div`
   display: flex;
   flex-direction: row;
   gap: 2.5rem;
@@ -311,6 +411,23 @@ const StatText = styled.div`
 const StatValue = styled.div`
   width: 6rem;
   font-size: 50px;
+`;
+
+const TimeBox = styled.div`
+  width: 12rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: black;
+  border-radius: 1rem;
+`;
+
+const TimeText = styled.div`
+  color: white;
+  font-size: 40px;
+  font-weight: 300;
+  font-family: 'Namun Gothic Coding', monospace;
+  letter-spacing: 0.1rem;
 `;
 
 const TypingContainer = styled.div`
