@@ -5,6 +5,7 @@ import Login from './routes/Login';
 import SignUp from './routes/SignUp';
 import StorageScreen from './routes/TypingStorage';
 import TypingScreen from './routes/Typing';
+import Result from './routes/Result';
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
         <Route path='/signUp' element={<SignUp />} />
         <Route path='/storage' element={<StorageScreen />} />
         <Route path='/typing/:id' element={<TypingScreen />} />
+        <Route path='/result' element={<Result />} />
         <Route path='*' element={<div>Not Found</div>} />
       </Routes>
     </Router>

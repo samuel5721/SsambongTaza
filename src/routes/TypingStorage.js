@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { getFirestore, collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import styled from 'styled-components';
-import { db } from '../firebase'; // Ensure this path is correct
+import { db } from '../firebase';
 
 import Header from '../components/Header';
-import { category, Section } from "../module";
+import { category } from "../module";
+import { Section } from "../components/Section";
+import { SizedButton } from "../components/SizedButton";
 import { Link, useNavigate } from "react-router-dom";
 
 function StorageScreen() {
@@ -13,6 +15,7 @@ function StorageScreen() {
   const [checkedIndex, setCheckedIndex] = useState(-1);
   const [randomDoc, setRandomDoc] = useState(null);
 
+  // 랜덤 문서
   const fetchRandomDocument = async () => {
     const collectionRef = collection(db, 'articles');
     const snapshot = await getDocs(collectionRef);
@@ -35,6 +38,7 @@ function StorageScreen() {
         const adminData = adminDocSnap.data();
         const refPaths = adminData.ref.map(refItem => refItem.path);
         
+        // refPaths에 있는 문서들을 참조하여 데이터를 가져옴
         const documentPromises = refPaths.map(async (path) => {
           const refDocSnap = await getDoc(doc(db, path));
           if (refDocSnap.exists()) {
@@ -55,6 +59,7 @@ function StorageScreen() {
           }
         });
 
+        // Promise.all을 사용하여 모든 데이터를 가져올 때까지 기다림
         const documentsArray = await Promise.all(documentPromises);
         setDocuments(documentsArray);
       } else {
@@ -65,7 +70,7 @@ function StorageScreen() {
     }
   };        
 
-
+  // 마운트
   useEffect(() => {
     const fetchAndSetDocument = async () => {
       const docId = await fetchRandomDocument();
@@ -77,6 +82,7 @@ function StorageScreen() {
   }, []);
   
 
+  // 버튼 클릭
   const handleStart = () => {
     if (checkedIndex === -1) {
       navigate(`/typing/${randomDoc}`);
@@ -120,9 +126,9 @@ function StorageScreen() {
             }
           </ArticleBox>
           <ButtonBox>
-            <SizeButton>내 작업실에서 불러오기</SizeButton>
-            <SizeButton>글마당에서 불러오기</SizeButton>
-            <SizeButton commit={true} onClick={handleStart}>시작하기</SizeButton>
+            <SizedButton>내 작업실에서 불러오기</SizedButton>
+            <SizedButton>글마당에서 불러오기</SizedButton>
+            <SizedButton isElevated={true} onClick={handleStart}>시작하기</SizedButton>
           </ButtonBox>
         </StorageBox>
       </Section>
@@ -213,16 +219,6 @@ const ButtonBox = styled.div`
   gap: 1rem;
 `;
 
-const SizeButton = styled.button` 
-  height: 4.5rem;
-  color: ${props => props.commit ? 'white' : '#272727'};
-  background-color: ${props => props.commit ? '#3347F7' : 'white'};
-  border: ${props => props.commit ? 'none' : '1px solid #8f8f8f'};
-  border-radius: 20px;
-  font-size: 24px;
-  font-family: 'NanumGothic', sans-serif;
-  font-weight: 400;
-  font-family: 'NanumGothic', sans-serif;
-`;
+
 
 export default StorageScreen;

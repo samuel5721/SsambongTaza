@@ -4,7 +4,7 @@ import styled from 'styled-components';
 import { useNavigate, useParams } from "react-router-dom";
 
 import Header from '../components/Header';
-import { Section } from "../module";
+import { Section } from "../components/Section";
 
 function useInterval(callback, delay) {
   const savedCallback = useRef();
@@ -169,10 +169,10 @@ function TypingScreen() {
     const accuracy = (newCorrectChars / newCurrentChars) * 100;
     setAccuracy(accuracy);
 
-    // 타자수 계산
+    // 현재 타자수 계산
     getCurrentCPM();
 
-  
+    // 다음 줄로 넘어가기
     if (value.length >= passages[currentLineGroup + index].length) {
       if (e.key === ' ' || e.key === 'Enter' || value.length > passages[currentLineGroup + index].length) {
         const newPreChars = preChars + value.length;
@@ -183,9 +183,13 @@ function TypingScreen() {
   
         const nextInput = inputRefs.current[index + 1];
         setCurrentLine(prevLine => prevLine + 1);
-  
+        
+        // 마지막 줄일 경우 결과 페이지로 넘어가기
         if (currentLine + 1 >= line) {
-          navigate('/');
+          const duration = getTimeClock();
+          navigate('/result', {
+            state: { id, averageCPM, accuracy, duration }
+          });
           return;
         }
   

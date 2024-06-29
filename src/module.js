@@ -17,13 +17,4 @@ const category = {
   NOF: '찾을 수 없음',
 };
 
-const Section = styled.section`
-  margin-top: 7rem;
-  padding: 0 10rem;
-  display: flex;
-  flex-direction: column;
-  align-items: left;
-  min-height: ${props => props.scrollbar ? '100vh' : 'none'};
-`;
-
-export {category, Section};
+export {category};
