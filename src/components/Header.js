@@ -11,10 +11,10 @@ function Header() {
         <Logo onClick={() => {navigate(`/`);}}>
           <img src={logo} alt='logo' width={125} />
         </Logo>
-        <MenuOption onClick={() => {navigate(`/login`);}}>연습타자</MenuOption>
+        <MenuOption onClick={() => { alert('참고 : 긴글타자 기능만 구현하였습니다. 긴글타자연습으로 이동합니다.'); navigate(`/storage`);}}>연습타자</MenuOption>
         <MenuOption onClick={() => {navigate(`/storage`);}}>긴글타자</MenuOption>
-        <MenuOption onClick={() => {navigate(`/login`);}}>타임어택</MenuOption>
-        <MenuOption onClick={() => {navigate(`/login`);}}>글마당</MenuOption>
+        <MenuOption onClick={() => { alert('참고 : 긴글타자 기능만 구현하였습니다. 긴글타자연습으로 이동합니다.'); navigate(`/storage`);}}>타임어택</MenuOption>
+        <MenuOption onClick={() => { alert('글마당 기능은 아직 미구현입니다.'); }}>글마당</MenuOption>
       </LeftMenu>
       <RightMenu>
         <MenuSmallOption onClick={() => {navigate(`/login`);}}>로그인</MenuSmallOption>

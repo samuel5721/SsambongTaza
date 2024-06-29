@@ -17,7 +17,7 @@ function App() {
         <Route path='/storage' element={<StorageScreen />} />
         <Route path='/typing/:id' element={<TypingScreen />} />
         <Route path='/result' element={<Result />} />
-        <Route path='*' element={<div>Not Found</div>} />
+        <Route path='*' element={<div>미완성된 페이지입니다.</div>} />
       </Routes>
     </Router>
   );

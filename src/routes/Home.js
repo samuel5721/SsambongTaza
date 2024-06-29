@@ -1,10 +1,13 @@
 import React from 'react';
 import styled from 'styled-components';
 import mainImage from '../asset/image/mainImage.jpg';
+import { useNavigate } from 'react-router-dom';
 
 import Header from '../components/Header';
 
 function Home() {
+  const navigate = useNavigate();
+
   return<>
     <Header />
     <section>
@@ -16,8 +19,8 @@ function Home() {
         <Title>가장 귀여운 동물, 북극여우</Title>
         <Contents>북극여우는 매력적인 북극 지역의 아이코닉한 동물 중 하나입니다. 과학적으로는 "북극여우" 또는 "폴라여우"로 알려져 있으며, 라틴어 명칭은 Vulpes lagopus입니다. 이들은 주로 북극 지방에 서식하며, 극지방의 극한 환경에서 살아남기 위해 특별히 적응되어 있습니...</Contents>
         <MainButtonForm>
-          <MainButton>시작하기</MainButton>
-          <MainButton>상세보기</MainButton>
+          <MainButton onClick={() => { navigate('typing/0005') }}>시작하기</MainButton>
+          <MainButton onClick={() => { alert('미완성 기능입니다.') }}>상세보기</MainButton>
         </MainButtonForm>
       </MainArticle>
       
